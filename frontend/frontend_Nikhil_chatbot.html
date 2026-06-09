@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Frontend</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            /* Light gray background */
+            /* Removed centering styles from here */
+        }
+
+        /* Custom scrollbar for chat messages */
+        .chat-messages::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: #e2e8f0;
+            /* Light blue-gray track */
+            border-radius: 10px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            /* Medium blue-gray thumb */
+            border-radius: 10px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+            /* Darker blue-gray on hover */
+        }
+
+        /* Basic styling for pre-formatted text (like the menu) */
+        .pre-formatted {
+            white-space: pre-wrap;
+            /* Preserves whitespace and wraps text */
+            font-family: 'Consolas', 'Monaco', monospace;
+            /* Monospace font for code-like output */
+        }
+    </style>
+</head>
+
+<body class="p-4 sm:p-6 md:p-8">
+    <div class="flex flex-col w-full max-w-7xl bg-white rounded-xl shadow-lg overflow-hidden mx-auto">
+        <!-- Chat Header -->
+        <div
+            class="bg-gradient-to-r from-blue-500 to-purple-600 p-4 text-white text-center text-2xl font-semibold rounded-t-xl shadow-md">
+            Simple Chatbot
+        </div>
+
+        <!-- Chat Messages Display Area -->
+        <div id="chatMessages" class="chat-messages flex-1 p-4 overflow-y-auto h-96 bg-gray-50">
+            <!-- Initial welcome message -->
+            <div class="flex justify-start mb-4">
+                <div class="bg-blue-100 text-blue-800 p-3 rounded-lg max-w-full shadow-sm pre-formatted">
+                    Hi! I am a simple ChatBot that can answer basic questions, play mini games, and perform
+                    calculations.
+                    Here are My inputs:
+                    ---------------------------------------------------------------------------------------------
+                    ---------------------------------------------------------------------------------------------
+                    ---------------------------------------------------------------------------------------------
+                    1. hi: for asking hi
+                    2. bye: for exiting
+                    3. how are you doing: for asking how are you doing
+                    4. creator: for the name made in turtle of the creator of this project
+                    5. hyp: for a hypotenuse calculator
+                    6. name: for its name
+                    7. calc: to open a calculator
+                    8. joke: for a good joke
+                    9. game: for a simple rock-paper-scissors best out of 10
+                    10. built: for when this was built and what this runs on
+                    11. roll: for a dice rolling game against some one else
+                    12. acronym: to search a acronym dictionary for computer science acronyms
+                    13. divisible: for a divisibility calculator
+                    14. coin: for a coin flip simulator with a fair coin
+                    15. quiz: for a 5 question math quiz
+                    16. cipher: for a ceaser cipher encrypter and decrypter
+                    17. ttt: to play tic-tac-toe against another person
+                </div>
+            </div>
+        </div>
+
+        <!-- Message Input Area -->
+        <div class="p-4 bg-gray-100 border-t border-gray-200 flex items-center gap-3">
+            <input type="text" id="messageInput" placeholder="Type your message..."
+                class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm text-gray-800" />
+            <button id="sendMessageBtn"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                Send
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const messageInput = document.getElementById('messageInput');
+        const sendMessageBtn = document.getElementById('sendMessageBtn');
+        const chatMessages = document.getElementById('chatMessages');
+
+        // Function to append a message to the chat display
+        // Now returns the contentDiv for easier manipulation
+        function appendMessage(sender, message) {
+            const messageWrapper = document.createElement('div');
+            messageWrapper.classList.add('flex', 'mb-4');
+
+            const contentDiv = document.createElement('div');
+            contentDiv.classList.add('p-3', 'rounded-lg', 'shadow-sm');
+
+            if (sender === 'user') {
+                messageWrapper.classList.add('justify-end');
+                contentDiv.classList.add('bg-blue-500', 'text-white', 'max-w-xs', 'md:max-w-md', 'shadow-md');
+                contentDiv.innerHTML = message;
+            } else { // sender === 'bot'
+                messageWrapper.classList.add('justify-start');
+                contentDiv.classList.add('bg-gray-200', 'text-gray-800', 'max-w-xs', 'md:max-w-md', 'shadow-sm', 'pre-formatted');
+                contentDiv.innerHTML = message;
+            }
+            messageWrapper.appendChild(contentDiv);
+            chatMessages.appendChild(messageWrapper);
+            // Scroll to the bottom of the chat
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return contentDiv; // Return the inner div that holds the message content
+        }
+
+        // Function to send message to backend
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message === '') return;
+
+            appendMessage('user', message);
+            messageInput.value = ''; // Clear input
+
+            // Simulate loading state by appending a new message and getting its content div reference
+            const loadingMessageContentDiv = appendMessage('bot', 'Typing...');
+
+            try {
+                // This is the part you will connect to your Flask backend.
+                // It's currently set up to send to '/chat' on the same origin.
+                const response = await fetch('http://localhost:5000/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message }),
+                });
+
+                if (!response.ok) {
+                    // If the response is not OK (e.g., 404, 500), throw an error
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const botResponse = data.response || "Sorry, I didn't get a response.";
+
+                // Update the content of the existing loading message div
+                if (loadingMessageContentDiv) {
+                    loadingMessageContentDiv.innerHTML = botResponse;
+                    // Reset styling if it was changed for an error
+                    loadingMessageContentDiv.classList.remove('bg-red-200', 'text-red-800');
+                    loadingMessageContentDiv.classList.add('bg-gray-200', 'text-gray-800');
+                }
+
+            } catch (error) {
+                console.error('Error sending message:', error);
+                if (loadingMessageContentDiv) {
+                    loadingMessageContentDiv.innerHTML = "Error: Could not connect to the chatbot or an issue occurred.";
+                    // Change background and text color to indicate an error
+                    loadingMessageContentDiv.classList.remove('bg-gray-200', 'text-gray-800');
+                    loadingMessageContentDiv.classList.add('bg-red-200', 'text-red-800');
+                }
+            }
+        }
+
+        // Event listeners
+        sendMessageBtn.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+
+</html>
